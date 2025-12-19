@@ -15,22 +15,32 @@ connectDB();
 const app = express();
 
 // Middleware
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:5173",
-  process.env.FRONTEND_URL || "http://localhost:3000", // Add your Vercel URL here
-];
 
 import cors from "cors";
 
+const allowedOrigins = [
+  "https://bus-booking-frontend-chi.vercel.app"
+];
+
 app.use(cors({
-  origin: "https://bus-booking-frontend-chi.vercel.app",
+  origin: function (origin, callback) {
+    // allow requests with no origin (Postman, Render health checks)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
+// IMPORTANT: allow preflight
 app.options("*", cors());
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
