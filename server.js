@@ -16,7 +16,7 @@ const app = express();
 
 // Middleware
 
-import cors from "cors";
+// import cors from "cors";
 
 const allowedOrigins = [
   "https://bus-booking-frontend-chi.vercel.app"
