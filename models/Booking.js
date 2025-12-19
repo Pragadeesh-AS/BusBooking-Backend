@@ -41,6 +41,10 @@ const bookingSchema = new mongoose.Schema({
         enum: ["Male", "Female", "Other"],
         required: [true, "Please provide passenger gender"],
       },
+      genderPreference: {
+        type: Boolean,
+        default: false,
+      },
     },
   ],
   boardingPoint: {
@@ -63,16 +67,28 @@ const bookingSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ["card", "upi", "netbanking", "wallet"],
+    enum: ["card", "upi", "scanner"],
     required: false,
+  },
+  paymentDetails: {
+    upiId: String,
+    cardLast4: String,
+    transactionRef: String,
   },
   transactionId: {
     type: String,
   },
+  verifiedAt: {
+    type: Date,
+  },
+  verifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
   bookingStatus: {
     type: String,
-    enum: ["confirmed", "cancelled", "completed"],
-    default: "confirmed",
+    enum: ["pending", "confirmed", "cancelled", "completed"],
+    default: "pending",
   },
   cancellationReason: {
     type: String,
@@ -87,7 +103,6 @@ const bookingSchema = new mongoose.Schema({
   bookingId: {
     type: String,
     unique: true,
-    required: true,
   },
   createdAt: {
     type: Date,

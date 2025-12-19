@@ -67,3 +67,24 @@ exports.adminOnly = async (req, res, next) => {
     next(error);
   }
 };
+
+// Bus Owner only middleware
+exports.busOwnerOnly = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(new AppError("Please authenticate first", 401));
+    }
+
+    if (req.user.role !== "busOwner") {
+      return next(new AppError("Access denied. Bus Owner only.", 403));
+    }
+
+    if (!req.user.isActive) {
+      return next(new AppError("Account is deactivated. Contact admin.", 403));
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};

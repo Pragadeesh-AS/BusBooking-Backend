@@ -4,6 +4,7 @@ const Booking = require("../models/Booking");
 const User = require("../models/User");
 const SeatLayout = require("../models/SeatLayout");
 const { AppError } = require("../middleware/errorHandler");
+const { getSeatLayoutTemplate } = require("../config/seatLayoutTemplates");
 
 // ==================== BUS MANAGEMENT ====================
 
@@ -12,11 +13,34 @@ const { AppError } = require("../middleware/errorHandler");
 // @access  Private/Admin
 exports.addBus = async (req, res, next) => {
   try {
-    const bus = await Bus.create(req.body);
+    const { seatType, ...busData } = req.body;
+
+    // Get seat layout template for the selected seat type
+    let layoutTemplate;
+    try {
+      layoutTemplate = getSeatLayoutTemplate(seatType);
+    } catch (error) {
+      return next(new AppError(error.message, 400));
+    }
+
+    // Auto-set totalSeats from template
+    busData.totalSeats = layoutTemplate.totalSeats;
+    busData.seatType = seatType;
+
+    // Create the bus
+    const bus = await Bus.create(busData);
+
+    // Auto-generate seat layout from template
+    await SeatLayout.create({
+      bus: bus._id,
+      layout: layoutTemplate.layout,
+      totalSeats: layoutTemplate.totalSeats,
+      seats: layoutTemplate.seats,
+    });
 
     res.status(201).json({
       success: true,
-      message: "Bus added successfully",
+      message: `Bus added successfully with ${seatType} seat layout (${layoutTemplate.totalSeats} seats)`,
       data: bus,
     });
   } catch (error) {
@@ -387,6 +411,200 @@ exports.updateUserStatus = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: `User ${isActive ? "activated" : "deactivated"} successfully`,
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+// @desc    Get all bus owners
+// @route   GET /api/admin/busowners
+// @access  Private/Admin
+exports.getAllBusOwners = async (req, res, next) => {
+  try {
+    const busOwners = await User.find({ role: "busOwner" }).select("-password");
+
+    res.status(200).json({
+      success: true,
+      count: busOwners.length,
+      data: busOwners,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Create bus owner account
+// @route   POST /api/admin/busowners
+// @access  Private/Admin
+exports.createBusOwner = async (req, res, next) => {
+  try {
+    const { name, email, password, phone, companyName, licenseNumber, contactNumber } =
+      req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return next(new AppError("User with this email already exists", 400));
+    }
+
+    const busOwner = await User.create({
+      name,
+      email,
+      password,
+      phone,
+      role: "busOwner",
+      companyName,
+      licenseNumber,
+      contactNumber,
+      isActive: true,
+    });
+
+    // Remove password from response
+    busOwner.password = undefined;
+
+    res.status(201).json({
+      success: true,
+      message: "Bus owner account created successfully",
+      data: busOwner,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update bus owner
+// @route   PUT /api/admin/busowners/:id
+// @access  Private/Admin
+exports.updateBusOwner = async (req, res, next) => {
+  try {
+    const { name, phone, companyName, licenseNumber, contactNumber, isActive } =
+      req.body;
+
+    const busOwner = await User.findOneAndUpdate(
+      { _id: req.params.id, role: "busOwner" },
+      { name, phone, companyName, licenseNumber, contactNumber, isActive },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!busOwner) {
+      return next(new AppError("Bus owner not found", 404));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Bus owner updated successfully",
+      data: busOwner,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Deactivate bus owner
+// @route   DELETE /api/admin/busowners/:id
+// @access  Private/Admin
+exports.deactivateBusOwner = async (req, res, next) => {
+  try {
+    const busOwner = await User.findOneAndUpdate(
+      { _id: req.params.id, role: "busOwner" },
+      { isActive: false },
+      { new: true }
+    ).select("-password");
+
+    if (!busOwner) {
+      return next(new AppError("Bus owner not found", 404));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Bus owner deactivated successfully",
+      data: busOwner,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Assign bus to owner
+// @route   POST /api/admin/buses/:busId/assign
+// @access  Private/Admin
+exports.assignBusToOwner = async (req, res, next) => {
+  try {
+    const { ownerId } = req.body;
+    const { busId } = req.params;
+
+    // Verify the owner exists and is a bus owner
+    const owner = await User.findOne({ _id: ownerId, role: "busOwner" });
+    if (!owner) {
+      return next(new AppError("Bus owner not found", 404));
+    }
+
+    // Update the bus
+    const bus = await Bus.findByIdAndUpdate(
+      busId,
+      { owner: ownerId },
+      { new: true }
+    ).populate("owner", "name companyName");
+
+    if (!bus) {
+      return next(new AppError("Bus not found", 404));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Bus assigned to owner successfully",
+      data: bus,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+// @desc    Block user
+// @route   PUT /api/admin/users/:id/block
+// @access  Private/Admin
+exports.blockUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+
+    if (user.role === "admin") {
+      return next(new AppError("Cannot block admin users", 400));
+    }
+
+    user.isBlocked = true;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "User blocked successfully",
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Unblock user
+// @route   PUT /api/admin/users/:id/unblock
+// @access  Private/Admin
+exports.unblockUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+
+    user.isBlocked = false;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "User unblocked successfully",
       data: user,
     });
   } catch (error) {

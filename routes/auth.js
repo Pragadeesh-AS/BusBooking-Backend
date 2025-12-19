@@ -7,6 +7,9 @@ const {
   adminLogin,
   getMe,
 } = require("../controllers/authController");
+const {
+  registerBusOwner,
+} = require("../controllers/operatorApprovalController");
 const { protect } = require("../middleware/auth");
 
 // Validation middleware
@@ -30,6 +33,7 @@ const loginValidation = [
 router.post("/register", registerValidation, register);
 router.post("/login", loginValidation, login);
 router.post("/admin-login", loginValidation, adminLogin);
+router.post("/register-busowner", registerBusOwner);
 router.get("/me", protect, getMe);
 
 module.exports = router;

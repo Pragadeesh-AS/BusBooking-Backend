@@ -6,7 +6,7 @@ const { AppError } = require("../middleware/errorHandler");
 // @access  Public
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, gender } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -14,12 +14,12 @@ exports.register = async (req, res, next) => {
       return next(new AppError("User already exists with this email", 400));
     }
 
-    // Create user
     const user = await User.create({
       name,
       email,
       password,
       phone,
+      gender,
       role: "user",
     });
 
@@ -35,6 +35,7 @@ exports.register = async (req, res, next) => {
           name: user.name,
           email: user.email,
           phone: user.phone,
+          gender: user.gender,
           role: user.role,
         },
         token,
@@ -74,6 +75,16 @@ exports.login = async (req, res, next) => {
       );
     }
 
+    // Check if user is blocked
+    if (user.isBlocked) {
+      return next(
+        new AppError(
+          "Your account has been blocked. Please contact support.",
+          403
+        )
+      );
+    }
+
     // Check if password matches
     const isMatch = await user.matchPassword(password);
 
@@ -93,6 +104,7 @@ exports.login = async (req, res, next) => {
           name: user.name,
           email: user.email,
           phone: user.phone,
+          gender: user.gender,
           role: user.role,
         },
         token,

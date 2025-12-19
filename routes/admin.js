@@ -15,6 +15,13 @@ const {
   getStats,
   getAllUsers,
   updateUserStatus,
+  blockUser,
+  unblockUser,
+  getAllBusOwners,
+  createBusOwner,
+  updateBusOwner,
+  deactivateBusOwner,
+  assignBusToOwner,
 } = require("../controllers/adminController");
 const { protect, adminOnly } = require("../middleware/auth");
 
@@ -45,5 +52,16 @@ router.get("/stats", getStats);
 // User management routes
 router.get("/users", getAllUsers);
 router.put("/users/:id", updateUserStatus);
+router.put("/users/:id/block", blockUser);
+router.put("/users/:id/unblock", unblockUser);
+
+// Bus Owner management routes
+router.get("/busowners", getAllBusOwners);
+router.post("/busowners", createBusOwner);
+router.put("/busowners/:id", updateBusOwner);
+router.delete("/busowners/:id", deactivateBusOwner);
+
+// Assign bus to owner
+router.post("/buses/:busId/assign", assignBusToOwner);
 
 module.exports = router;

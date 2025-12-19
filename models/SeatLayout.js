@@ -9,7 +9,7 @@ const seatLayoutSchema = new mongoose.Schema({
   },
   layout: {
     type: String,
-    enum: ["2x2", "2x3", "1x2", "2x1"],
+    enum: ["2x2", "2x3", "1x2", "2x1", "2x2+1x2"], // Added Semi-Sleeper layout
     required: [true, "Please specify seat layout"],
     default: "2x2",
   },

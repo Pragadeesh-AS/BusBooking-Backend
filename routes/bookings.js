@@ -7,6 +7,7 @@ const {
   cancelBooking,
   processPayment,
 } = require("../controllers/bookingController");
+const { generateTicket } = require("../controllers/ticketController");
 const { protect } = require("../middleware/auth");
 
 // All routes are protected (require authentication)
@@ -18,5 +19,6 @@ router.get("/user/:userId", getUserBookings);
 router.get("/:id", getBooking);
 router.put("/:id/cancel", cancelBooking);
 router.post("/:id/payment", processPayment);
+router.get("/:id/ticket", generateTicket);
 
 module.exports = router;

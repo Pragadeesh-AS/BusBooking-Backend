@@ -4,11 +4,13 @@ const {
   searchBuses,
   getBusDetails,
   getSeatLayout,
+  getFeaturedBuses,
 } = require("../controllers/busController");
 
 // Routes
+router.get("/", getFeaturedBuses);
 router.get("/search", searchBuses);
-router.get("/:id", getBusDetails);
-router.get("/:busId/seats", getSeatLayout);
+router.get("/:busId/seats", getSeatLayout); // More specific route first
+router.get("/:id", getBusDetails); // Generic route last
 
 module.exports = router;

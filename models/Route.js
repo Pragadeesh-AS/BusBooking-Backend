@@ -46,20 +46,6 @@ const routeSchema = new mongoose.Schema({
     required: [true, "Please provide ticket price"],
     min: 0,
   },
-  days: [
-    {
-      type: String,
-      enum: [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday",
-      ],
-    },
-  ],
   boardingPoints: [
     {
       location: String,
@@ -72,6 +58,16 @@ const routeSchema = new mongoose.Schema({
       time: String,
     },
   ],
+  offers: {
+    type: String,
+    trim: true,
+  },
+  discount: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100,
+  },
   isActive: {
     type: Boolean,
     default: true,

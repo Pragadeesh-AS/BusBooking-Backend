@@ -19,6 +19,11 @@ const userSchema = new mongoose.Schema({
       "Please provide a valid email",
     ],
   },
+  gender: {
+    type: String,
+    enum: ["Male", "Female", "Other"],
+    default: "Male",
+  },
   password: {
     type: String,
     required: [true, "Please provide a password"],
@@ -32,12 +37,46 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["user", "admin"],
+    enum: ["user", "admin", "busOwner"],
     default: "user",
+  },
+  // Bus Owner specific fields
+  companyName: {
+    type: String,
+    required: function () {
+      return this.role === "busOwner";
+    },
+  },
+  licenseNumber: {
+    type: String,
+    required: function () {
+      return this.role === "busOwner";
+    },
+  },
+  contactNumber: {
+    type: String,
+    required: function () {
+      return this.role === "busOwner";
+    },
   },
   isActive: {
     type: Boolean,
     default: true,
+  },
+  isBlocked: {
+    type: Boolean,
+    default: false,
+  },
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: function () {
+      // Only bus owners need approval, others are auto-approved
+      return this.role === "busOwner" ? "pending" : "approved";
+    },
+  },
+  rejectionReason: {
+    type: String,
   },
   createdAt: {
     type: Date,
